@@ -3,7 +3,7 @@
 Página única para os convidados enviarem fotos da festa direto do celular, sem instalar nada.
 As fotos vão para uma pasta de um bucket **privado** no Supabase Storage. Os noivos veem e baixam pelo painel do Supabase.
 
-- `index.html` — a página inteira (HTML + CSS + JavaScript puro, supabase-js via CDN com versão fixa e hash SRI).
+- `index.html` — a página inteira (HTML + CSS + JavaScript puro, supabase-js via CDN com versão fixa e hash SRI). Botões "Tirar foto" e "Escolher da galeria", compressão no celular (lado maior 2048 px, JPEG 0,8, sem EXIF/GPS), fila com retentativa automática e backoff.
 - `supabase/setup.sql` — cria o bucket e a regra de acesso. Executar uma vez no SQL Editor do Supabase.
 - `tests/` — testes de consistência, teste real de upload contra o Supabase e um servidor local para testar no celular.
 
@@ -18,7 +18,8 @@ Sem framework, sem build, sem backend, sem tabelas.
 | Convidado só **cria** arquivos, e só dentro da pasta do evento | Policy RLS `convidados_enviam_fotos` (INSERT para `anon`) |
 | Convidado não lista, não baixa, não sobrescreve, não apaga | Ausência de policies de select/update/delete |
 | Fotos não têm link público | Bucket `public = false` |
-| Nome do arquivo não revela o nome original do celular | Página gera `pasta/AAAAMMDD-HHMMSS-<aleatório>.ext` |
+| Nome do arquivo não revela o nome original do celular | Página gera `pasta/AAAAMMDD-HHMMSS-<aleatório>.jpg` |
+| Foto enviada sem metadados de localização | Re-codificação no canvas descarta EXIF/GPS (se a foto não puder ser re-codificada, ex.: HEIC no Chrome, vai o original) |
 
 A pasta do evento tem nome aleatório (`7646c3cabd95e59fab53bbae5a6c0fdc`). Ela aparece no código da página,
 então serve para organizar e dificultar acessos por engano, não como senha.
@@ -38,10 +39,11 @@ Por isso, nos dias antes do casamento, entre no painel do projeto e faça um env
 ## Configuração
 
 1. Executar `supabase/setup.sql` no SQL Editor do projeto.
-2. Preencher no topo do `<script>` de `index.html`:
+2. Preencher no topo do `<script>` de `index.html` (objeto `CONFIG`):
    - `supabaseUrl`: `https://<ref>.supabase.co`
    - `supabaseKey`: chave **publishable** (`sb_publishable_...`). Nunca a secreta.
-   - `coupleNames` e `eventDate`: textos exibidos no topo (opcionais).
+   - `coupleNames`, `eventDate`: textos exibidos no topo (opcionais). `themeColor`: cor dos botões (`#RRGGBB`).
+   - Pasta do evento: vem de `?e=<pasta>` no link; sem `?e=` vale `folder`. A policy do `setup.sql` só aceita a pasta configurada, então `?e=` com outra pasta é recusado pelo servidor.
    Se mudar `bucket`, `folder` ou `maxFileBytes`, mude igual no `setup.sql` e execute de novo.
 
 ## Testes

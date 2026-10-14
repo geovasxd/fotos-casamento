@@ -73,3 +73,30 @@ test("supabase-js do CDN bate com o hash SRI", async () => {
   const hash = "sha384-" + createHash("sha384").update(body).digest("base64");
   assert.equal(hash, integrity);
 });
+
+test("sem getUserMedia; câmera via input capture", () => {
+  assert.doesNotMatch(indexHtml, /getUserMedia/);
+  assert.match(indexHtml, /<input[^>]*accept="image\/\*"[^>]*capture="environment"/);
+  assert.match(indexHtml, /<input[^>]*accept="image\/\*"[^>]*multiple/);
+});
+
+test("compressão: lado maior 2048 e qualidade 0.8", () => {
+  assert.match(indexHtml, /maxSide:\s*2048/);
+  assert.match(indexHtml, /quality:\s*0\.8\b/);
+});
+
+test("pasta do evento lida do parâmetro ?e=", () => {
+  assert.match(indexHtml, /get\("e"\)/);
+});
+
+test("sem TODO nem placeholder no index.html", () => {
+  assert.doesNotMatch(indexHtml, /TODO|COLE_AQUI|your-project/i);
+});
+
+test("aviso para não fechar a página existe", () => {
+  assert.match(indexHtml, /Não feche esta página enquanto houver fotos sendo enviadas/);
+});
+
+test("themeColor é #RRGGBB", () => {
+  assert.match(indexHtml, /themeColor:\s*"#[0-9a-fA-F]{6}"/);
+});

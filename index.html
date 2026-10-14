@@ -19,6 +19,8 @@
     --line: #e4dacd;
     --ok: #2f6b3a;
     --err: #a3322a;
+    --warn-bg: #fff4d6;
+    --warn-line: #ecd48a;
     --radius: 14px;
   }
   * { box-sizing: border-box; }
@@ -27,6 +29,7 @@
   body {
     margin: 0;
     min-height: 100vh;
+    overflow-x: hidden;
     background: var(--bg);
     color: var(--ink);
     font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -41,6 +44,7 @@
     font-weight: normal;
     font-size: clamp(1.9rem, 8vw, 2.6rem);
     line-height: 1.15;
+    overflow-wrap: anywhere;
   }
   .date { margin: 0; color: var(--muted); }
   .card {
@@ -50,18 +54,26 @@
     padding: 22px 18px;
   }
   .intro { margin: 0 0 18px; text-align: center; }
+  .actions { display: grid; gap: 12px; }
   .pick {
     display: flex; align-items: center; justify-content: center;
     width: 100%; min-height: 56px; padding: 14px 18px;
-    border: 0; border-radius: 999px;
+    border: 2px solid var(--accent); border-radius: 999px;
     background: var(--accent); color: var(--accent-ink);
     font: inherit; font-size: 1.05rem; font-weight: 600;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
-  .pick:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
-  .pick[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
-  .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+  .pick.secondary { background: transparent; color: var(--accent); }
+  .pick:focus-visible, .retry:focus-visible, .item-retry:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .pick:disabled { opacity: 0.55; cursor: not-allowed; }
+  .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
   .hint { margin: 12px 0 0; color: var(--muted); font-size: 0.85rem; text-align: center; }
+  .notice {
+    margin: 16px 0 0; padding: 12px 14px; border-radius: 10px;
+    background: var(--warn-bg); border: 1px solid var(--warn-line);
+    font-weight: 600; text-align: center;
+  }
   .summary { margin: 18px 0 0; font-weight: 600; text-align: center; min-height: 1.5em; }
   .summary.ok { color: var(--ok); }
   .summary.err { color: var(--err); }
@@ -71,17 +83,23 @@
   }
   ul.files { list-style: none; margin: 16px 0 0; padding: 0; }
   ul.files li {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
     padding: 10px 0; border-top: 1px solid var(--line);
     font-size: 0.92rem;
   }
-  .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .fstatus { flex: none; color: var(--muted); }
+  .fname { flex: 1 1 8rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fstatus { flex: 0 1 auto; max-width: 100%; color: var(--muted); text-align: right; }
   li[data-state="done"] .fstatus { color: var(--ok); }
-  li[data-state="error"] .fstatus { color: var(--err); white-space: normal; text-align: right; max-width: 60%; }
+  li[data-state="error"] .fstatus { color: var(--err); }
+  .item-retry {
+    flex: 1 0 100%;
+    min-height: 44px; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+    font: inherit; font-weight: 600; cursor: pointer;
+  }
   .retry {
     margin: 16px auto 0; display: block;
-    padding: 10px 18px; border-radius: 999px;
+    min-height: 44px; padding: 10px 18px; border-radius: 999px;
     border: 1px solid var(--accent); background: transparent; color: var(--accent);
     font: inherit; font-weight: 600; cursor: pointer;
   }
@@ -98,15 +116,20 @@
 
   <section class="card" aria-labelledby="title">
     <p class="banner" id="banner" role="alert" hidden></p>
-    <p class="intro">Escolha as fotos que você tirou na festa e envie para o álbum dos noivos. Não precisa instalar nada.</p>
+    <p class="intro">Tire uma foto agora ou escolha as que você já tirou na festa e envie para o álbum dos noivos. Não precisa instalar nada.</p>
 
-    <label class="pick" id="pick" for="file-input" aria-disabled="false">Escolher fotos</label>
-    <input class="file-input" id="file-input" type="file" accept="image/*" multiple>
+    <div class="actions">
+      <button class="pick" id="btn-camera" type="button">Tirar foto</button>
+      <button class="pick secondary" id="btn-gallery" type="button">Escolher da galeria</button>
+    </div>
+    <input class="file-input" id="input-camera" type="file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+    <input class="file-input" id="input-gallery" type="file" accept="image/*" multiple tabindex="-1" aria-hidden="true">
 
+    <p class="notice" id="notice" role="status" hidden>Não feche esta página enquanto houver fotos sendo enviadas.</p>
     <p class="hint" id="hint"></p>
     <p class="summary" id="summary" role="status" aria-live="polite"></p>
     <ul class="files" id="files" aria-label="Fotos selecionadas"></ul>
-    <button class="retry" id="retry" type="button" hidden>Tentar enviar novamente as que falharam</button>
+    <button class="retry" id="retry" type="button" hidden>Tentar de novo todas as que falharam</button>
   </section>
 
   <p class="privacy">As fotos são guardadas em armazenamento privado: não ficam públicas na internet e só os noivos acessam a pasta. Envie apenas fotos que você tem direito de compartilhar.</p>
@@ -122,6 +145,7 @@
 // bucket e folder precisam ser idênticos aos de supabase/setup.sql.
 // supabaseKey é a chave "publishable" (sb_publishable_...), pública por design;
 // nunca coloque aqui a chave secreta (sb_secret_...) nem a service_role.
+// A pasta pode vir do link (?e=<pasta>); sem ?e= vale o folder abaixo.
 const CONFIG = {
   supabaseUrl: "https://hwepfyjipnwusjbtelcr.supabase.co",
   supabaseKey: "sb_publishable_xHfR1QJ4jYbUjQFizxcv_g_OTsCnsQb",
@@ -129,8 +153,21 @@ const CONFIG = {
   folder: "7646c3cabd95e59fab53bbae5a6c0fdc",
   coupleNames: "Petria & Diego",
   eventDate: "16 de janeiro de 2027",
+  themeColor: "#7a5c3e", // cor dos botões (#RRGGBB)
   maxFileBytes: 20 * 1024 * 1024,
   concurrency: 3,
+};
+
+// Compressão no navegador antes do envio.
+const IMAGE = { maxSide: 2048, quality: 0.8 };
+
+// Retentativa com backoff exponencial (1 s, 2 s, 4 s, 8 s, com variação aleatória).
+const RETRY = {
+  attempts: 5,
+  baseMs: 1000,
+  maxMs: 15000,
+  attemptTimeoutMs: 90000, // sinal ruim: desiste da tentativa e tenta de novo
+  onlineWaitMs: 120000,    // sem rede: espera a conexão voltar antes de gastar tentativa
 };
 
 // Tipos aceitos (mesma lista de allowed_mime_types do bucket).
@@ -207,6 +244,20 @@ function fileExtension(name) {
   return i === -1 ? "" : name.slice(i + 1).toLowerCase();
 }
 
+function sleep(ms) {
+  return new Promise(function (resolve) { setTimeout(resolve, ms); });
+}
+
+// Erro com mensagem própria para o convidado e indicação se vale tentar de novo.
+class ItemError extends Error {
+  constructor(message, userReason, retryable) {
+    super(message);
+    this.name = "ItemError";
+    this.userReason = userReason;
+    this.retryable = retryable;
+  }
+}
+
 // Retorna { ok: true, mime, ext } ou { ok: false, reason }.
 function classifyFile(file) {
   let mime = (file.type || "").toLowerCase();
@@ -214,18 +265,39 @@ function classifyFile(file) {
   const ext = MIME_TO_EXT[mime];
   if (!ext) return { ok: false, reason: "Tipo não aceito (envie JPG, PNG, WEBP ou HEIC)" };
   if (file.size === 0) return { ok: false, reason: "Arquivo vazio" };
-  if (file.size > CONFIG.maxFileBytes) return { ok: false, reason: "Maior que " + formatMB(CONFIG.maxFileBytes) };
   return { ok: true, mime: mime, ext: ext };
 }
 
-function buildObjectPath(ext) {
-  return CONFIG.folder + "/" + timestamp(new Date()) + "-" + randomHex(8) + "." + ext;
+// Pasta do evento: ?e= do link; sem ?e= usa CONFIG.folder.
+// Retorna { ok: true, folder, source } ou { ok: false, cause }.
+function resolveFolder(search) {
+  const raw = new URLSearchParams(search).get("e");
+  if (raw === null) {
+    if (CONFIG.folder) return { ok: true, folder: CONFIG.folder, source: "config" };
+    return { ok: false, cause: "folder_missing" };
+  }
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(raw)) return { ok: false, cause: "folder_invalid" };
+  return { ok: true, folder: raw, source: "url" };
+}
+
+function buildObjectPath(folder, ext) {
+  return folder + "/" + timestamp(new Date()) + "-" + randomHex(8) + "." + ext;
+}
+
+// Decide se vale tentar de novo. Sem código HTTP = falha de rede/timeout.
+function failureInfo(err) {
+  const codes = [err && err.statusCode, err && err.status].map(Number).filter(function (n) { return Number.isFinite(n) && n > 0; });
+  const code = codes.length ? codes[0] : 0;
+  if (code === 409) return { duplicate: true, retryable: false };
+  if (code === 0 || code === 408 || code === 425 || code === 429 || code >= 500) return { duplicate: false, retryable: true };
+  return { duplicate: false, retryable: false };
 }
 
 // Converte erro do Storage em mensagem curta para o convidado.
 function friendlyError(err) {
   const code = String((err && (err.statusCode || err.status)) || "");
   const msg = String((err && err.message) || "").toLowerCase();
+  if (err && err.name === "UploadTimeout") return "Conexão lenta demais";
   if (!navigator.onLine) return "Sem conexão com a internet";
   if (code === "413" || msg.indexOf("maximum allowed size") !== -1 || msg.indexOf("too large") !== -1) return "Maior que o limite permitido";
   if (code === "415" || msg.indexOf("mime type") !== -1) return "Tipo de arquivo não aceito";
@@ -233,54 +305,116 @@ function friendlyError(err) {
   if (msg.indexOf("failed to fetch") !== -1 || msg.indexOf("network") !== -1 || msg.indexOf("load failed") !== -1) return "Falha de conexão";
   return "Não foi possível enviar";
 }
-// Falhas que repetir não resolve.
-const NON_RETRYABLE = ["Maior que o limite permitido", "Tipo de arquivo não aceito", "Envio não autorizado"];
+
+// ===== Compressão =====
+// O navegador aplica a orientação EXIF ao decodificar o <img> (naturalWidth/Height e drawImage
+// já vêm "em pé"). Ao redesenhar no canvas e exportar JPEG, a foto sai correta e sem EXIF/GPS.
+async function compressImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const srcW = img.naturalWidth;
+    const srcH = img.naturalHeight;
+    if (!srcW || !srcH) throw new Error("Imagem sem dimensões");
+    const scale = Math.min(1, IMAGE.maxSide / Math.max(srcW, srcH));
+    const w = Math.max(1, Math.round(srcW * scale));
+    const h = Math.max(1, Math.round(srcH * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D indisponível");
+    ctx.fillStyle = "#ffffff"; // PNG/WEBP transparente não pode virar fundo preto no JPEG
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    const blob = await new Promise(function (resolve, reject) {
+      canvas.toBlob(function (b) { return b ? resolve(b) : reject(new Error("canvas.toBlob retornou null")); }, "image/jpeg", IMAGE.quality);
+    });
+    canvas.width = 0; // libera memória (Safari segura canvas grandes)
+    canvas.height = 0;
+    return { blob: blob, width: w, height: h, srcWidth: srcW, srcHeight: srcH };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Prepara item.blob/mime/ext. Se não der para comprimir (ex.: HEIC no Chrome), envia o original
+// quando o tipo é aceito; nunca descarta a foto em silêncio.
+async function prepareBlob(item) {
+  const c = classifyFile(item.file);
+  if (!c.ok) throw new ItemError("Arquivo rejeitado: " + c.reason, c.reason, false);
+  try {
+    const out = await compressImage(item.file);
+    item.blob = out.blob;
+    item.mime = "image/jpeg";
+    item.ext = "jpg";
+    log("info", "compress.done", { name: item.file.name, from: item.file.size, to: out.blob.size, srcW: out.srcWidth, srcH: out.srcHeight, w: out.width, h: out.height });
+  } catch (err) {
+    log("error", "compress.failed", { name: item.file.name, size: item.file.size, type: item.file.type, error: serializeError(err) });
+    item.blob = item.file;
+    item.mime = c.mime;
+    item.ext = c.ext;
+    log("warn", "compress.fallback_original", { name: item.file.name, mime: c.mime });
+  }
+  if (item.blob.size > CONFIG.maxFileBytes) {
+    item.blob = null;
+    throw new ItemError("Arquivo maior que o limite", "Maior que " + formatMB(CONFIG.maxFileBytes), false);
+  }
+}
 
 // ===== Estado e interface =====
 const els = {
   title: document.getElementById("title"),
   date: document.getElementById("date"),
   banner: document.getElementById("banner"),
-  pick: document.getElementById("pick"),
-  input: document.getElementById("file-input"),
+  notice: document.getElementById("notice"),
+  btnCamera: document.getElementById("btn-camera"),
+  btnGallery: document.getElementById("btn-gallery"),
+  inputCamera: document.getElementById("input-camera"),
+  inputGallery: document.getElementById("input-gallery"),
   hint: document.getElementById("hint"),
   summary: document.getElementById("summary"),
   files: document.getElementById("files"),
   retry: document.getElementById("retry"),
 };
 
-const state = { items: [], active: 0, busy: false, client: null };
+const state = { items: [], queue: [], running: 0, client: null, folder: "" };
+
+function isBusy() { return state.running > 0 || state.queue.length > 0; }
 
 function showBanner(text) {
   els.banner.textContent = text;
   els.banner.hidden = false;
 }
 
-function setBusy(busy) {
-  state.busy = busy;
-  els.input.disabled = busy;
-  els.pick.setAttribute("aria-disabled", String(busy));
-  els.pick.textContent = busy ? "Enviando..." : "Escolher mais fotos";
+function disablePicker(message) {
+  showBanner(message);
+  [els.btnCamera, els.btnGallery, els.inputCamera, els.inputGallery].forEach(function (el) { el.disabled = true; });
 }
 
 function renderItem(item) {
   item.li.dataset.state = item.state;
-  const labels = { waiting: "Na fila", uploading: "Enviando...", done: "Enviada ✓", error: item.reason || "Erro" };
+  const labels = { waiting: "Na fila", uploading: item.note || "Enviando...", done: "Enviada ✓", error: item.reason || "Falhou" };
   item.statusEl.textContent = labels[item.state];
+  item.retryBtn.hidden = !(item.state === "error" && item.retryable);
 }
 
 function renderSummary() {
   const total = state.items.length;
-  const done = state.items.filter(function (i) { return i.state === "done"; }).length;
-  const failed = state.items.filter(function (i) { return i.state === "error"; }).length;
+  const count = function (s) { return state.items.filter(function (i) { return i.state === s; }).length; };
+  const done = count("done");
+  const failed = count("error");
   const pending = total - done - failed;
   els.summary.className = "summary";
   if (total === 0) { els.summary.textContent = ""; }
-  else if (pending > 0) { els.summary.textContent = "Enviadas " + done + " de " + total + "... mantenha esta página aberta"; }
+  else if (pending > 0) { els.summary.textContent = "Enviadas " + done + " de " + total; }
   else if (failed === 0) { els.summary.textContent = done === 1 ? "1 foto enviada. Obrigado!" : done + " fotos enviadas. Obrigado!"; els.summary.className = "summary ok"; }
   else { els.summary.textContent = done + " enviada(s), " + failed + " com problema."; els.summary.className = "summary err"; }
-  const retryable = state.items.some(function (i) { return i.state === "error" && i.retryable; });
-  els.retry.hidden = state.busy || !retryable;
+  els.notice.hidden = pending === 0;
+  const retryable = state.items.filter(function (i) { return i.state === "error" && i.retryable; }).length;
+  els.retry.hidden = retryable < 2;
 }
 
 function addItem(file) {
@@ -290,91 +424,201 @@ function addItem(file) {
   nameEl.textContent = file.name || "foto";
   const statusEl = document.createElement("span");
   statusEl.className = "fstatus";
+  const retryBtn = document.createElement("button");
+  retryBtn.type = "button";
+  retryBtn.className = "item-retry";
+  retryBtn.textContent = "Tentar de novo";
+  retryBtn.setAttribute("aria-label", "Tentar de novo: " + (file.name || "foto"));
+  retryBtn.hidden = true;
   li.appendChild(nameEl);
   li.appendChild(statusEl);
+  li.appendChild(retryBtn);
   els.files.appendChild(li);
-  const item = { file: file, li: li, statusEl: statusEl, state: "waiting", reason: "", retryable: false, mime: "", ext: "" };
+  const item = { file: file, li: li, statusEl: statusEl, retryBtn: retryBtn, state: "waiting", reason: "", note: "", retryable: false, blob: null, mime: "", ext: "", path: "", tries: 0 };
+  retryBtn.addEventListener("click", function () {
+    log("info", "retry.item_clicked", { name: file.name });
+    enqueue([item]);
+  });
   state.items.push(item);
   return item;
 }
 
-async function uploadItem(item) {
-  const path = buildObjectPath(item.ext);
+// ===== Envio =====
+function withTimeout(promise, ms) {
+  let timer;
+  const timeout = new Promise(function (_, reject) {
+    timer = setTimeout(function () {
+      const err = new Error("Envio sem resposta em " + ms + " ms");
+      err.name = "UploadTimeout";
+      reject(err);
+    }, ms);
+  });
+  return Promise.race([promise, timeout]).finally(function () { clearTimeout(timer); });
+}
+
+function waitOnline(maxMs) {
+  if (navigator.onLine) return Promise.resolve(true);
+  return new Promise(function (resolve) {
+    function onOnline() { clearTimeout(timer); resolve(true); }
+    const timer = setTimeout(function () {
+      window.removeEventListener("online", onOnline);
+      resolve(false);
+    }, maxMs);
+    window.addEventListener("online", onOnline, { once: true });
+  });
+}
+
+async function uploadWithRetry(item) {
+  for (let attempt = 1; attempt <= RETRY.attempts; attempt++) {
+    if (!navigator.onLine) {
+      item.note = "Sem sinal. Vai continuar sozinho quando a conexão voltar...";
+      renderItem(item);
+      log("warn", "upload.waiting_online", { path: item.path, attempt: attempt });
+      const back = await waitOnline(RETRY.onlineWaitMs);
+      log(back ? "info" : "warn", back ? "network.back_online" : "upload.online_wait_expired", { path: item.path });
+    }
+    item.note = attempt === 1 ? "" : "Enviando de novo (" + attempt + "/" + RETRY.attempts + ")...";
+    renderItem(item);
+    item.tries++;
+    try {
+      const result = await withTimeout(
+        state.client.storage.from(CONFIG.bucket).upload(item.path, item.blob, { contentType: item.mime, upsert: false, cacheControl: "3600" }),
+        RETRY.attemptTimeoutMs
+      );
+      if (result.error) throw result.error;
+      return;
+    } catch (err) {
+      const info = failureInfo(err);
+      if (info.duplicate) {
+        if (item.tries > 1) {
+          // Uma tentativa anterior chegou ao servidor mas a resposta se perdeu: a foto já está lá.
+          log("warn", "upload.already_exists", { path: item.path, tries: item.tries });
+          return;
+        }
+        // Colisão de nome (praticamente impossível): novo nome e segue.
+        log("warn", "upload.path_collision", { path: item.path, error: serializeError(err) });
+        item.path = buildObjectPath(state.folder, item.ext);
+        item.tries = 0;
+        attempt--;
+        continue;
+      }
+      const willRetry = info.retryable && attempt < RETRY.attempts;
+      log(willRetry ? "warn" : "error", "upload.attempt_failed", { path: item.path, attempt: attempt, of: RETRY.attempts, retryable: info.retryable, error: serializeError(err) });
+      if (!willRetry) throw err;
+      const delay = Math.round(Math.min(RETRY.maxMs, RETRY.baseMs * Math.pow(2, attempt - 1)) * (0.75 + Math.random() * 0.5));
+      item.note = "Falhou. Nova tentativa em " + Math.ceil(delay / 1000) + " s...";
+      renderItem(item);
+      await sleep(delay);
+    }
+  }
+}
+
+async function processItem(item) {
   const started = performance.now();
   item.state = "uploading";
+  item.reason = "";
+  item.note = "";
+  item.retryable = false;
   renderItem(item);
-  log("info", "upload.start", { path: path, size: item.file.size, mime: item.mime });
   try {
-    const result = await state.client.storage.from(CONFIG.bucket).upload(path, item.file, {
-      contentType: item.mime,
-      upsert: false,
-      cacheControl: "3600",
-    });
-    if (result.error) throw result.error;
+    if (!item.blob) await prepareBlob(item);
+    if (!item.path) item.path = buildObjectPath(state.folder, item.ext);
+    log("info", "upload.start", { path: item.path, size: item.blob.size, mime: item.mime });
+    await uploadWithRetry(item);
     item.state = "done";
-    log("info", "upload.success", { path: result.data.path, size: item.file.size, ms: Math.round(performance.now() - started) });
+    log("info", "upload.success", { path: item.path, size: item.blob.size, tries: item.tries, ms: Math.round(performance.now() - started) });
+    item.blob = null; // libera memória
   } catch (err) {
     item.state = "error";
-    item.reason = friendlyError(err);
-    item.retryable = NON_RETRYABLE.indexOf(item.reason) === -1;
-    log("error", "upload.failed", { path: path, size: item.file.size, mime: item.mime, reason: item.reason, error: serializeError(err) });
+    if (err instanceof ItemError) {
+      item.reason = err.userReason;
+      item.retryable = err.retryable;
+    } else {
+      item.reason = friendlyError(err);
+      item.retryable = true;
+    }
+    log("error", "upload.failed", { path: item.path, name: item.file.name, size: item.file.size, mime: item.mime, reason: item.reason, error: serializeError(err) });
   }
+  item.note = "";
   renderItem(item);
   renderSummary();
 }
 
-async function runQueue(queue) {
-  setBusy(true);
-  renderSummary();
-  const workers = [];
-  const n = Math.min(CONFIG.concurrency, queue.length);
-  for (let w = 0; w < n; w++) {
-    workers.push((async function () {
-      while (queue.length) {
-        const item = queue.shift();
-        await uploadItem(item);
-      }
-    })());
+function pump() {
+  while (state.running < CONFIG.concurrency && state.queue.length) {
+    const item = state.queue.shift();
+    state.running++;
+    processItem(item)
+      .catch(function (err) {
+        // processItem trata os próprios erros; isto cobre falha inesperada na própria interface.
+        log("error", "item.crashed", { name: item.file.name, error: serializeError(err) });
+        item.state = "error";
+        item.reason = "Não foi possível enviar";
+        item.retryable = true;
+        renderItem(item);
+      })
+      .finally(function () {
+        state.running--;
+        pump();
+        renderSummary();
+        if (!isBusy()) {
+          const count = function (s) { return state.items.filter(function (i) { return i.state === s; }).length; };
+          log("info", "queue.finished", { total: state.items.length, done: count("done"), failed: count("error") });
+        }
+      });
   }
-  await Promise.all(workers);
-  setBusy(false);
-  renderSummary();
-  const done = state.items.filter(function (i) { return i.state === "done"; }).length;
-  const failed = state.items.filter(function (i) { return i.state === "error"; }).length;
-  log("info", "queue.finished", { total: state.items.length, done: done, failed: failed });
 }
 
-function handleSelection(fileList) {
+function enqueue(items) {
+  items.forEach(function (item) {
+    item.state = "waiting";
+    item.reason = "";
+    item.retryable = false;
+    renderItem(item);
+    state.queue.push(item);
+  });
+  renderSummary();
+  pump();
+}
+
+function handleSelection(fileList, source) {
   const files = Array.from(fileList || []);
-  log("info", "files.selected", { count: files.length });
+  log("info", "files.selected", { count: files.length, source: source });
   if (files.length === 0) return;
-  const queue = [];
+  const toSend = [];
   files.forEach(function (file) {
     const item = addItem(file);
     const c = classifyFile(file);
     if (!c.ok) {
       item.state = "error";
       item.reason = c.reason;
+      item.retryable = false;
+      renderItem(item);
       log("warn", "file.rejected_client", { name: file.name, size: file.size, type: file.type, reason: c.reason });
     } else {
-      item.mime = c.mime;
-      item.ext = c.ext;
-      queue.push(item);
+      toSend.push(item);
     }
-    renderItem(item);
   });
-  renderSummary();
-  if (queue.length) {
-    runQueue(queue).catch(function (err) {
-      log("error", "queue.crashed", { error: serializeError(err) });
-      setBusy(false);
-      showBanner("Ocorreu um erro inesperado. Recarregue a página e tente novamente.");
-    });
-  }
+  if (toSend.length) enqueue(toSend);
+  else renderSummary();
 }
 
 // ===== Inicialização =====
+function applyTheme() {
+  if (!/^#[0-9a-fA-F]{6}$/.test(CONFIG.themeColor || "")) {
+    log("warn", "config.theme_invalid", { themeColor: CONFIG.themeColor });
+    return;
+  }
+  const hex = CONFIG.themeColor;
+  const rgb = [1, 3, 5].map(function (i) { return parseInt(hex.slice(i, i + 2), 16) / 255; });
+  const lin = rgb.map(function (c) { return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); });
+  const lum = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+  document.documentElement.style.setProperty("--accent", hex);
+  document.documentElement.style.setProperty("--accent-ink", lum > 0.45 ? "#1b1b1b" : "#ffffff");
+}
+
 function init() {
+  applyTheme();
   if (CONFIG.coupleNames) {
     els.title.textContent = CONFIG.coupleNames;
     document.title = "Fotos do casamento · " + CONFIG.coupleNames;
@@ -383,13 +627,12 @@ function init() {
     els.date.textContent = CONFIG.eventDate;
     els.date.hidden = false;
   }
-  els.hint.textContent = "JPG, PNG, WEBP ou HEIC · até " + formatMB(CONFIG.maxFileBytes) + " por foto · várias de uma vez";
+  els.hint.textContent = "Várias fotos de uma vez · as fotos são reduzidas automaticamente antes do envio";
 
   const missing = [];
   if (!CONFIG.supabaseUrl) missing.push("supabaseUrl");
   if (!CONFIG.supabaseKey) missing.push("supabaseKey");
   if (!CONFIG.bucket) missing.push("bucket");
-  if (!CONFIG.folder) missing.push("folder");
   if (missing.length) {
     const err = new Error("Configuração incompleta: " + missing.join(", "));
     log("error", "config.invalid", { missing: missing, error: serializeError(err) });
@@ -402,6 +645,14 @@ function init() {
     disablePicker("Página configurada de forma insegura. Avise os noivos.");
     return;
   }
+  const folder = resolveFolder(location.search);
+  if (!folder.ok) {
+    const err = new Error("Pasta do evento ausente ou inválida no link (" + folder.cause + ")");
+    log("error", "config.folder", { cause: folder.cause, error: serializeError(err) });
+    disablePicker("Este link de envio está incompleto. Abra a página pelo QR code dos noivos.");
+    return;
+  }
+  state.folder = folder.folder;
   if (!window.supabase || typeof window.supabase.createClient !== "function") {
     const err = new Error("Biblioteca supabase-js não carregou (CDN bloqueado ou sem internet)");
     log("error", "sdk.not_loaded", { error: serializeError(err) });
@@ -413,38 +664,27 @@ function init() {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 
-  els.input.addEventListener("change", function () {
-    handleSelection(els.input.files);
-    els.input.value = ""; // permite escolher os mesmos arquivos de novo
-  });
-  els.pick.addEventListener("click", function (e) {
-    if (state.busy) e.preventDefault();
+  els.btnCamera.addEventListener("click", function () { els.inputCamera.click(); });
+  els.btnGallery.addEventListener("click", function () { els.inputGallery.click(); });
+  [[els.inputCamera, "camera"], [els.inputGallery, "gallery"]].forEach(function (pair) {
+    const input = pair[0];
+    input.addEventListener("change", function () {
+      handleSelection(input.files, pair[1]);
+      input.value = ""; // permite escolher os mesmos arquivos de novo
+    });
   });
   els.retry.addEventListener("click", function () {
-    const queue = state.items.filter(function (i) { return i.state === "error" && i.retryable; });
-    log("info", "retry.clicked", { count: queue.length });
-    queue.forEach(function (i) { i.state = "waiting"; i.reason = ""; i.retryable = false; renderItem(i); });
-    if (queue.length) {
-      runQueue(queue).catch(function (err) {
-        log("error", "queue.crashed", { error: serializeError(err) });
-        setBusy(false);
-        showBanner("Ocorreu um erro inesperado. Recarregue a página e tente novamente.");
-      });
-    }
+    const items = state.items.filter(function (i) { return i.state === "error" && i.retryable; });
+    log("info", "retry.all_clicked", { count: items.length });
+    if (items.length) enqueue(items);
   });
   window.addEventListener("beforeunload", function (e) {
-    if (state.busy) { e.preventDefault(); e.returnValue = ""; }
+    if (isBusy()) { e.preventDefault(); e.returnValue = ""; }
   });
   window.addEventListener("offline", function () { log("warn", "network.offline"); });
   window.addEventListener("online", function () { log("info", "network.online"); });
 
-  log("info", "app.ready", { bucket: CONFIG.bucket, sdk: "supabase-js@2.117.2" });
-}
-
-function disablePicker(message) {
-  showBanner(message);
-  els.input.disabled = true;
-  els.pick.setAttribute("aria-disabled", "true");
+  log("info", "app.ready", { bucket: CONFIG.bucket, folderSource: folder.source, sdk: "supabase-js@2.117.2" });
 }
 
 init();

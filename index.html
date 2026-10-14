@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#f6f1ea">
+<link rel="icon" href="data:,">
+<title>Fotos do casamento</title>
+<style>
+  :root {
+    --bg: #f6f1ea;
+    --card: #fffdf9;
+    --ink: #2e2a26;
+    --muted: #6f665d;
+    --accent: #7a5c3e;
+    --accent-ink: #ffffff;
+    --line: #e4dacd;
+    --ok: #2f6b3a;
+    --err: #a3322a;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    padding: max(24px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+  }
+  main { max-width: 520px; margin: 0 auto; }
+  header { text-align: center; margin: 16px 0 28px; }
+  .kicker { margin: 0; color: var(--muted); font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  h1 {
+    margin: 8px 0 4px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: normal;
+    font-size: clamp(1.9rem, 8vw, 2.6rem);
+    line-height: 1.15;
+  }
+  .date { margin: 0; color: var(--muted); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 18px;
+  }
+  .intro { margin: 0 0 18px; text-align: center; }
+  .pick {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; min-height: 56px; padding: 14px 18px;
+    border: 0; border-radius: 999px;
+    background: var(--accent); color: var(--accent-ink);
+    font: inherit; font-size: 1.05rem; font-weight: 600;
+    cursor: pointer;
+  }
+  .pick:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .pick[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+  .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+  .hint { margin: 12px 0 0; color: var(--muted); font-size: 0.85rem; text-align: center; }
+  .summary { margin: 18px 0 0; font-weight: 600; text-align: center; min-height: 1.5em; }
+  .summary.ok { color: var(--ok); }
+  .summary.err { color: var(--err); }
+  .banner {
+    margin: 0 0 16px; padding: 12px 14px; border-radius: 10px;
+    background: #fbeceb; color: var(--err); border: 1px solid #efc9c5;
+  }
+  ul.files { list-style: none; margin: 16px 0 0; padding: 0; }
+  ul.files li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-top: 1px solid var(--line);
+    font-size: 0.92rem;
+  }
+  .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fstatus { flex: none; color: var(--muted); }
+  li[data-state="done"] .fstatus { color: var(--ok); }
+  li[data-state="error"] .fstatus { color: var(--err); white-space: normal; text-align: right; max-width: 60%; }
+  .retry {
+    margin: 16px auto 0; display: block;
+    padding: 10px 18px; border-radius: 999px;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+    font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .privacy { margin: 22px 4px 0; color: var(--muted); font-size: 0.8rem; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="kicker">Nosso casamento</p>
+    <h1 id="title">Compartilhe suas fotos</h1>
+    <p class="date" id="date" hidden></p>
+  </header>
+
+  <section class="card" aria-labelledby="title">
+    <p class="banner" id="banner" role="alert" hidden></p>
+    <p class="intro">Escolha as fotos que você tirou na festa e envie para o álbum dos noivos. Não precisa instalar nada.</p>
+
+    <label class="pick" id="pick" for="file-input" aria-disabled="false">Escolher fotos</label>
+    <input class="file-input" id="file-input" type="file" accept="image/*" multiple>
+
+    <p class="hint" id="hint"></p>
+    <p class="summary" id="summary" role="status" aria-live="polite"></p>
+    <ul class="files" id="files" aria-label="Fotos selecionadas"></ul>
+    <button class="retry" id="retry" type="button" hidden>Tentar enviar novamente as que falharam</button>
+  </section>
+
+  <p class="privacy">As fotos são guardadas em armazenamento privado: não ficam públicas na internet e só os noivos acessam a pasta. Envie apenas fotos que você tem direito de compartilhar.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"
+        integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok"
+        crossorigin="anonymous"></script>
+<script>
+"use strict";
+
+// ===== Configuração do evento (único lugar para editar) =====
+// bucket e folder precisam ser idênticos aos de supabase/setup.sql.
+// supabaseKey é a chave "publishable" (sb_publishable_...), pública por design;
+// nunca coloque aqui a chave secreta (sb_secret_...) nem a service_role.
+const CONFIG = {
+  supabaseUrl: "https://hwepfyjipnwusjbtelcr.supabase.co",
+  supabaseKey: "sb_publishable_xHfR1QJ4jYbUjQFizxcv_g_OTsCnsQb",
+  bucket: "fotos-casamento",
+  folder: "7646c3cabd95e59fab53bbae5a6c0fdc",
+  coupleNames: "Petria & Diego",
+  eventDate: "16 de janeiro de 2027",
+  maxFileBytes: 20 * 1024 * 1024,
+  concurrency: 3,
+};
+
+// Tipos aceitos (mesma lista de allowed_mime_types do bucket).
+const MIME_TO_EXT = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/heic": "heic",
+  "image/heif": "heif",
+};
+// Alguns celulares entregam HEIC/HEIF sem tipo; nesse caso o tipo vem da extensão.
+const EXT_TO_MIME = {
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp",
+  heic: "image/heic", heif: "image/heif",
+};
+
+// ===== Logs estruturados =====
+function serializeError(err) {
+  if (err instanceof Error) {
+    const out = { name: err.name, message: err.message, stack: err.stack };
+    if (err.status !== undefined) out.status = err.status;
+    if (err.statusCode !== undefined) out.statusCode = err.statusCode;
+    if (err.cause !== undefined) out.cause = serializeError(err.cause);
+    // supabase-js guarda a falha de rede original em originalError.
+    if (err.originalError !== undefined) out.originalError = serializeError(err.originalError);
+    return out;
+  }
+  // Valor lançado que não é Error: gera stack no ponto de captura.
+  return { name: "NonErrorThrown", message: String(err), value: err, stack: new Error(String(err)).stack };
+}
+
+function log(level, event, data) {
+  const entry = { ts: new Date().toISOString(), level: level, event: event };
+  if (data) Object.assign(entry, data);
+  let line;
+  try {
+    line = JSON.stringify(entry);
+  } catch (stringifyErr) {
+    line = JSON.stringify({ ts: entry.ts, level: "error", event: "log.serialize_failed", originalEvent: event, error: serializeError(stringifyErr) });
+  }
+  if (level === "error") console.error(line);
+  else if (level === "warn") console.warn(line);
+  else console.info(line);
+}
+
+window.addEventListener("error", function (e) {
+  log("error", "window.error", { error: serializeError(e.error || e.message), source: e.filename, line: e.lineno, col: e.colno });
+});
+window.addEventListener("unhandledrejection", function (e) {
+  log("error", "window.unhandledrejection", { error: serializeError(e.reason) });
+});
+
+// ===== Utilidades =====
+function randomHex(bytes) {
+  // getRandomValues funciona também fora de HTTPS (teste em rede local), ao contrário de randomUUID.
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+}
+
+function pad(n) { return String(n).padStart(2, "0"); }
+
+function timestamp(d) {
+  return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+}
+
+function formatMB(bytes) {
+  const mb = bytes / (1024 * 1024);
+  return (Number.isInteger(mb) ? String(mb) : mb.toFixed(1).replace(".", ",")) + " MB";
+}
+
+function fileExtension(name) {
+  const i = name.lastIndexOf(".");
+  return i === -1 ? "" : name.slice(i + 1).toLowerCase();
+}
+
+// Retorna { ok: true, mime, ext } ou { ok: false, reason }.
+function classifyFile(file) {
+  let mime = (file.type || "").toLowerCase();
+  if (!mime) mime = EXT_TO_MIME[fileExtension(file.name)] || "";
+  const ext = MIME_TO_EXT[mime];
+  if (!ext) return { ok: false, reason: "Tipo não aceito (envie JPG, PNG, WEBP ou HEIC)" };
+  if (file.size === 0) return { ok: false, reason: "Arquivo vazio" };
+  if (file.size > CONFIG.maxFileBytes) return { ok: false, reason: "Maior que " + formatMB(CONFIG.maxFileBytes) };
+  return { ok: true, mime: mime, ext: ext };
+}
+
+function buildObjectPath(ext) {
+  return CONFIG.folder + "/" + timestamp(new Date()) + "-" + randomHex(8) + "." + ext;
+}
+
+// Converte erro do Storage em mensagem curta para o convidado.
+function friendlyError(err) {
+  const code = String((err && (err.statusCode || err.status)) || "");
+  const msg = String((err && err.message) || "").toLowerCase();
+  if (!navigator.onLine) return "Sem conexão com a internet";
+  if (code === "413" || msg.indexOf("maximum allowed size") !== -1 || msg.indexOf("too large") !== -1) return "Maior que o limite permitido";
+  if (code === "415" || msg.indexOf("mime type") !== -1) return "Tipo de arquivo não aceito";
+  if (code === "403" || code === "401" || msg.indexOf("row-level security") !== -1) return "Envio não autorizado";
+  if (msg.indexOf("failed to fetch") !== -1 || msg.indexOf("network") !== -1 || msg.indexOf("load failed") !== -1) return "Falha de conexão";
+  return "Não foi possível enviar";
+}
+// Falhas que repetir não resolve.
+const NON_RETRYABLE = ["Maior que o limite permitido", "Tipo de arquivo não aceito", "Envio não autorizado"];
+
+// ===== Estado e interface =====
+const els = {
+  title: document.getElementById("title"),
+  date: document.getElementById("date"),
+  banner: document.getElementById("banner"),
+  pick: document.getElementById("pick"),
+  input: document.getElementById("file-input"),
+  hint: document.getElementById("hint"),
+  summary: document.getElementById("summary"),
+  files: document.getElementById("files"),
+  retry: document.getElementById("retry"),
+};
+
+const state = { items: [], active: 0, busy: false, client: null };
+
+function showBanner(text) {
+  els.banner.textContent = text;
+  els.banner.hidden = false;
+}
+
+function setBusy(busy) {
+  state.busy = busy;
+  els.input.disabled = busy;
+  els.pick.setAttribute("aria-disabled", String(busy));
+  els.pick.textContent = busy ? "Enviando..." : "Escolher mais fotos";
+}
+
+function renderItem(item) {
+  item.li.dataset.state = item.state;
+  const labels = { waiting: "Na fila", uploading: "Enviando...", done: "Enviada ✓", error: item.reason || "Erro" };
+  item.statusEl.textContent = labels[item.state];
+}
+
+function renderSummary() {
+  const total = state.items.length;
+  const done = state.items.filter(function (i) { return i.state === "done"; }).length;
+  const failed = state.items.filter(function (i) { return i.state === "error"; }).length;
+  const pending = total - done - failed;
+  els.summary.className = "summary";
+  if (total === 0) { els.summary.textContent = ""; }
+  else if (pending > 0) { els.summary.textContent = "Enviadas " + done + " de " + total + "... mantenha esta página aberta"; }
+  else if (failed === 0) { els.summary.textContent = done === 1 ? "1 foto enviada. Obrigado!" : done + " fotos enviadas. Obrigado!"; els.summary.className = "summary ok"; }
+  else { els.summary.textContent = done + " enviada(s), " + failed + " com problema."; els.summary.className = "summary err"; }
+  const retryable = state.items.some(function (i) { return i.state === "error" && i.retryable; });
+  els.retry.hidden = state.busy || !retryable;
+}
+
+function addItem(file) {
+  const li = document.createElement("li");
+  const nameEl = document.createElement("span");
+  nameEl.className = "fname";
+  nameEl.textContent = file.name || "foto";
+  const statusEl = document.createElement("span");
+  statusEl.className = "fstatus";
+  li.appendChild(nameEl);
+  li.appendChild(statusEl);
+  els.files.appendChild(li);
+  const item = { file: file, li: li, statusEl: statusEl, state: "waiting", reason: "", retryable: false, mime: "", ext: "" };
+  state.items.push(item);
+  return item;
+}
+
+async function uploadItem(item) {
+  const path = buildObjectPath(item.ext);
+  const started = performance.now();
+  item.state = "uploading";
+  renderItem(item);
+  log("info", "upload.start", { path: path, size: item.file.size, mime: item.mime });
+  try {
+    const result = await state.client.storage.from(CONFIG.bucket).upload(path, item.file, {
+      contentType: item.mime,
+      upsert: false,
+      cacheControl: "3600",
+    });
+    if (result.error) throw result.error;
+    item.state = "done";
+    log("info", "upload.success", { path: result.data.path, size: item.file.size, ms: Math.round(performance.now() - started) });
+  } catch (err) {
+    item.state = "error";
+    item.reason = friendlyError(err);
+    item.retryable = NON_RETRYABLE.indexOf(item.reason) === -1;
+    log("error", "upload.failed", { path: path, size: item.file.size, mime: item.mime, reason: item.reason, error: serializeError(err) });
+  }
+  renderItem(item);
+  renderSummary();
+}
+
+async function runQueue(queue) {
+  setBusy(true);
+  renderSummary();
+  const workers = [];
+  const n = Math.min(CONFIG.concurrency, queue.length);
+  for (let w = 0; w < n; w++) {
+    workers.push((async function () {
+      while (queue.length) {
+        const item = queue.shift();
+        await uploadItem(item);
+      }
+    })());
+  }
+  await Promise.all(workers);
+  setBusy(false);
+  renderSummary();
+  const done = state.items.filter(function (i) { return i.state === "done"; }).length;
+  const failed = state.items.filter(function (i) { return i.state === "error"; }).length;
+  log("info", "queue.finished", { total: state.items.length, done: done, failed: failed });
+}
+
+function handleSelection(fileList) {
+  const files = Array.from(fileList || []);
+  log("info", "files.selected", { count: files.length });
+  if (files.length === 0) return;
+  const queue = [];
+  files.forEach(function (file) {
+    const item = addItem(file);
+    const c = classifyFile(file);
+    if (!c.ok) {
+      item.state = "error";
+      item.reason = c.reason;
+      log("warn", "file.rejected_client", { name: file.name, size: file.size, type: file.type, reason: c.reason });
+    } else {
+      item.mime = c.mime;
+      item.ext = c.ext;
+      queue.push(item);
+    }
+    renderItem(item);
+  });
+  renderSummary();
+  if (queue.length) {
+    runQueue(queue).catch(function (err) {
+      log("error", "queue.crashed", { error: serializeError(err) });
+      setBusy(false);
+      showBanner("Ocorreu um erro inesperado. Recarregue a página e tente novamente.");
+    });
+  }
+}
+
+// ===== Inicialização =====
+function init() {
+  if (CONFIG.coupleNames) {
+    els.title.textContent = CONFIG.coupleNames;
+    document.title = "Fotos do casamento · " + CONFIG.coupleNames;
+  }
+  if (CONFIG.eventDate) {
+    els.date.textContent = CONFIG.eventDate;
+    els.date.hidden = false;
+  }
+  els.hint.textContent = "JPG, PNG, WEBP ou HEIC · até " + formatMB(CONFIG.maxFileBytes) + " por foto · várias de uma vez";
+
+  const missing = [];
+  if (!CONFIG.supabaseUrl) missing.push("supabaseUrl");
+  if (!CONFIG.supabaseKey) missing.push("supabaseKey");
+  if (!CONFIG.bucket) missing.push("bucket");
+  if (!CONFIG.folder) missing.push("folder");
+  if (missing.length) {
+    const err = new Error("Configuração incompleta: " + missing.join(", "));
+    log("error", "config.invalid", { missing: missing, error: serializeError(err) });
+    disablePicker("Página ainda não configurada. Avise os noivos.");
+    return;
+  }
+  if (/^sb_secret_/.test(CONFIG.supabaseKey)) {
+    const err = new Error("Chave secreta no frontend: use a chave publishable");
+    log("error", "config.secret_key", { error: serializeError(err) });
+    disablePicker("Página configurada de forma insegura. Avise os noivos.");
+    return;
+  }
+  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+    const err = new Error("Biblioteca supabase-js não carregou (CDN bloqueado ou sem internet)");
+    log("error", "sdk.not_loaded", { error: serializeError(err) });
+    disablePicker("Não foi possível carregar a página. Verifique a internet e recarregue.");
+    return;
+  }
+
+  state.client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+
+  els.input.addEventListener("change", function () {
+    handleSelection(els.input.files);
+    els.input.value = ""; // permite escolher os mesmos arquivos de novo
+  });
+  els.pick.addEventListener("click", function (e) {
+    if (state.busy) e.preventDefault();
+  });
+  els.retry.addEventListener("click", function () {
+    const queue = state.items.filter(function (i) { return i.state === "error" && i.retryable; });
+    log("info", "retry.clicked", { count: queue.length });
+    queue.forEach(function (i) { i.state = "waiting"; i.reason = ""; i.retryable = false; renderItem(i); });
+    if (queue.length) {
+      runQueue(queue).catch(function (err) {
+        log("error", "queue.crashed", { error: serializeError(err) });
+        setBusy(false);
+        showBanner("Ocorreu um erro inesperado. Recarregue a página e tente novamente.");
+      });
+    }
+  });
+  window.addEventListener("beforeunload", function (e) {
+    if (state.busy) { e.preventDefault(); e.returnValue = ""; }
+  });
+  window.addEventListener("offline", function () { log("warn", "network.offline"); });
+  window.addEventListener("online", function () { log("info", "network.online"); });
+
+  log("info", "app.ready", { bucket: CONFIG.bucket, sdk: "supabase-js@2.117.2" });
+}
+
+function disablePicker(message) {
+  showBanner(message);
+  els.input.disabled = true;
+  els.pick.setAttribute("aria-disabled", "true");
+}
+
+init();
+</script>
+</body>
+</html>

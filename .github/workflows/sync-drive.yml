@@ -29,6 +29,12 @@ jobs:
           RCLONE_CONFIG_GDRIVE_SCOPE: drive
           RCLONE_CONFIG_GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
         # copy (nunca sync): não apaga nada no Drive. Pula arquivos que já existem.
+        # Cada evento (?e=<pasta>) vai para a sua pasta do Drive: "pasta-supabase|Pasta do Drive".
         run: |
-          rclone copy sb:fotos-casamento "gdrive:Fotos Casamento" \
-            --ignore-existing --transfers 4 --fast-list -v
+          EVENTOS=(
+            "7646c3cabd95e59fab53bbae5a6c0fdc|Fotos Casamento"
+            "3726a2f810a1948920bf609baefd59c0|Despedida de Solteiro"
+          )
+          for ev in "${EVENTOS[@]}"; do
+            rclone copy "sb:fotos-casamento/${ev%|*}" "gdrive:${ev#*|}"               --ignore-existing --transfers 4 -v
+          done

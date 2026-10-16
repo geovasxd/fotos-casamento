@@ -1,0 +1,34 @@
+name: Sync fotos Supabase -> Google Drive
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-drive
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Instalar rclone
+        run: curl -fsSL https://rclone.org/install.sh | sudo bash
+
+      - name: Copiar fotos novas
+        env:
+          RCLONE_CONFIG_SB_TYPE: s3
+          RCLONE_CONFIG_SB_PROVIDER: Other
+          RCLONE_CONFIG_SB_ENDPOINT: https://hwepfyjipnwusjbtelcr.supabase.co/storage/v1/s3
+          RCLONE_CONFIG_SB_REGION: us-east-1
+          RCLONE_CONFIG_SB_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_KEY_ID }}
+          RCLONE_CONFIG_SB_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET }}
+          RCLONE_CONFIG_GDRIVE_TYPE: drive
+          RCLONE_CONFIG_GDRIVE_SCOPE: drive
+          RCLONE_CONFIG_GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
+        # copy (nunca sync): não apaga nada no Drive. Pula arquivos que já existem.
+        run: |
+          rclone copy sb:fotos-casamento "gdrive:Fotos Casamento" \
+            --ignore-existing --transfers 4 --fast-list -v

@@ -29,7 +29,10 @@ to anon
 with check (
   bucket_id = 'fotos-casamento'
   and array_length(storage.foldername(name), 1) = 1
-  and (storage.foldername(name))[1] = '7646c3cabd95e59fab53bbae5a6c0fdc'
+  and (storage.foldername(name))[1] in (
+    '7646c3cabd95e59fab53bbae5a6c0fdc', -- casamento
+    '3726a2f810a1948920bf609baefd59c0'  -- despedida de solteiro
+  )
 );
 
 -- Conferência: deve retornar 1 linha com public = false, 20971520 e os 5 tipos.

@@ -342,6 +342,13 @@ const EVENT_TEXTS = {
   },
 };
 
+// Links curtos: ?e=casamento e ?e=despedida valem como a pasta de cada evento.
+// Cada pasta é copiada para a sua própria pasta do Drive (ver apps-script/Code.gs).
+const EVENT_ALIASES = {
+  casamento: "7646c3cabd95e59fab53bbae5a6c0fdc",
+  despedida: "3726a2f810a1948920bf609baefd59c0",
+};
+
 // Compressão no navegador antes do envio.
 const IMAGE = { maxSide: 2048, quality: 0.8 };
 
@@ -455,7 +462,8 @@ function classifyFile(file) {
 // Pasta do evento: ?e= do link; sem ?e= usa CONFIG.folder.
 // Retorna { ok: true, folder, source } ou { ok: false, cause }.
 function resolveFolder(search) {
-  const raw = new URLSearchParams(search).get("e");
+  let raw = new URLSearchParams(search).get("e");
+  if (raw !== null && Object.prototype.hasOwnProperty.call(EVENT_ALIASES, raw.toLowerCase())) raw = EVENT_ALIASES[raw.toLowerCase()];
   if (raw === null) {
     if (CONFIG.folder) return { ok: true, folder: CONFIG.folder, source: "config" };
     return { ok: false, cause: "folder_missing" };

@@ -13,18 +13,18 @@
 <title>Fotos do evento</title>
 <style>
   :root {
-    --bg: #dde7da;
-    --card: #fbfcf8;
-    --ink: #26302a;
+    --bg: #e3ebe0;
+    --card: rgba(252, 253, 249, 0.82);
+    --ink: #232d27;
     --muted: #5f6d63;
     --accent: #4a6350;
     --accent-ink: #ffffff;
-    --line: #cfdacb;
+    --line: rgba(74, 99, 80, 0.16);
     --ok: #2f6b3a;
     --err: #a3322a;
-    --warn-bg: #fff4d6;
+    --warn-bg: #fff6dc;
     --warn-line: #ecd48a;
-    --radius: 14px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -32,110 +32,247 @@
   body {
     margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
-    background:
-      radial-gradient(120% 60% at 50% 0%, #eef4ec 0%, rgba(253, 234, 240, 0) 70%),
-      var(--bg);
+    background: linear-gradient(180deg, #eef4ec 0%, var(--bg) 55%, #d6e2d3 100%);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     color: var(--ink);
     font: 16px/1.5 "Josefin Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     padding: max(24px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+    position: relative;
   }
+
+  /* Fundo: manchas de luz que flutuam devagar + grão sutil */
+  .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.55; will-change: transform; }
+  .blob.b1 { width: 340px; height: 340px; top: -110px; left: -90px; background: #f5f0dc; animation: drift1 22s ease-in-out infinite alternate; }
+  .blob.b2 { width: 380px; height: 380px; bottom: -140px; right: -120px; background: #b7cdb4; animation: drift2 26s ease-in-out infinite alternate; }
+  .blob.b3 { width: 240px; height: 240px; top: 42%; left: 55%; background: #f7e6e0; opacity: 0.4; animation: drift3 30s ease-in-out infinite alternate; }
+  .bg::after {
+    content: ""; position: absolute; inset: 0; opacity: 0.05; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  @keyframes drift1 { to { transform: translate(70px, 90px) scale(1.15); } }
+  @keyframes drift2 { to { transform: translate(-80px, -60px) scale(1.1); } }
+  @keyframes drift3 { to { transform: translate(-90px, 70px) scale(0.85); } }
+
   main { max-width: 520px; margin: 0 auto; }
-  header { text-align: center; margin: 24px 0 32px; animation: rise 0.7s ease-out both; }
-  .kicker { margin: 0; color: var(--accent); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; }
-  .ornament { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px auto 0; color: var(--accent); }
-  .ornament::before, .ornament::after { content: ""; width: 56px; height: 1px; background: linear-gradient(90deg, transparent, var(--accent)); }
-  .ornament::after { transform: scaleX(-1); }
-  .ornament svg { width: 14px; height: 14px; fill: currentColor; opacity: 0.85; }
-  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { header, .card { animation: none; } .pick { transition: none; } }
+
+  /* Entrada em cascata */
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @keyframes unblur { from { opacity: 0; filter: blur(10px); letter-spacing: 0.14em; } to { opacity: 1; filter: blur(0); letter-spacing: 0.03em; } }
+  @keyframes draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes beat { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.22); } 28% { transform: scale(1); } 42% { transform: scale(1.14); } 70% { transform: scale(1); } }
+
+  header { text-align: center; margin: 28px 0 30px; }
+  .kicker { margin: 0; color: var(--accent); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.34em; text-transform: uppercase; animation: rise 0.9s var(--ease) 0.05s both; }
   h1 {
-    margin: 8px 0 4px;
+    margin: 10px 0 4px;
     font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
     font-weight: 300;
-    font-size: clamp(2.1rem, 9vw, 2.9rem);
+    font-size: clamp(2.5rem, 12vw, 3.5rem);
     letter-spacing: 0.03em;
-    line-height: 1.15;
+    line-height: 1.1;
     overflow-wrap: anywhere;
+    animation: unblur 1.5s var(--ease) 0.2s both;
   }
-  .date { margin: 10px 0 0; color: var(--muted); font-size: 0.95rem; letter-spacing: 0.04em; }
+  .ornament { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px auto 0; color: var(--accent); }
+  .ornament::before, .ornament::after { content: ""; width: 64px; height: 1px; background: linear-gradient(90deg, transparent, var(--accent)); transform-origin: right; animation: draw 1.2s var(--ease) 0.7s both; }
+  .ornament::after { transform: scaleX(-1); animation-name: draw-r; transform-origin: left; }
+  @keyframes draw-r { from { transform: scaleX(0); } to { transform: scaleX(-1); } }
+  .ornament svg { width: 15px; height: 15px; fill: currentColor; opacity: 0.9; animation: beat 3.4s ease-in-out 1.6s infinite; }
+  .date { margin: 12px 0 0; color: var(--muted); font-size: 0.95rem; letter-spacing: 0.05em; font-style: italic; animation: rise 0.9s var(--ease) 0.9s both; }
+
   .card {
+    position: relative;
     background: var(--card);
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 20px;
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 24px;
     padding: 30px 22px 24px;
-    box-shadow: 0 1px 2px rgba(40, 70, 50, 0.06), 0 12px 32px -8px rgba(40, 70, 50, 0.18);
-    animation: rise 0.7s 0.12s ease-out both;
+    box-shadow: 0 1px 2px rgba(40, 70, 50, 0.06), 0 22px 48px -16px rgba(40, 70, 50, 0.28);
+    animation: rise 0.9s var(--ease) 0.45s both;
   }
-  .intro { margin: 0 0 24px; text-align: center; color: var(--ink); line-height: 1.65; }
+  .card > * { animation: rise 0.8s var(--ease) both; }
+  .card > .intro { animation-delay: 0.7s; }
+  .card > .actions { animation-delay: 0.85s; }
+  .card > .hint { animation-delay: 1s; }
+  .intro { margin: 0 0 24px; text-align: center; line-height: 1.7; }
+
   .actions { display: grid; gap: 12px; }
   .pick {
+    position: relative; overflow: hidden; isolation: isolate;
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    width: 100%; min-height: 58px; padding: 14px 18px;
+    width: 100%; min-height: 60px; padding: 14px 18px;
     border: 1.5px solid var(--accent); border-radius: 999px;
-    background: var(--accent); color: var(--accent-ink);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #fff) 0%, var(--accent) 100%);
+    color: var(--accent-ink);
     font: inherit; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.06em;
-    box-shadow: 0 6px 16px -6px rgba(74, 99, 80, 0.55);
+    box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--accent) 70%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease), background-color 0.3s ease, color 0.3s ease;
     -webkit-tap-highlight-color: transparent;
   }
-  .pick svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-  .pick:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 20px -8px rgba(74, 99, 80, 0.6); }
-  .pick:active:not(:disabled) { transform: translateY(0) scale(0.99); }
-  .pick.secondary { background: transparent; color: var(--accent); box-shadow: none; }
-  .pick.secondary:hover:not(:disabled) { background: rgba(74, 99, 80, 0.07); box-shadow: none; }
+  .pick svg { width: 21px; height: 21px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.45s var(--ease); }
+  /* brilho que atravessa o botão principal */
+  .pick:not(.secondary)::before {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; z-index: -1;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+    transform: skewX(-18deg); animation: shine 5s ease-in-out 2s infinite;
+  }
+  @keyframes shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+  .pick:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 26px -10px color-mix(in srgb, var(--accent) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .pick:hover:not(:disabled) svg { transform: scale(1.12) rotate(-6deg); }
+  .pick:active:not(:disabled) { transform: translateY(0) scale(0.985); transition-duration: 0.12s; }
+  .pick.secondary { background: rgba(255, 255, 255, 0.5); color: var(--accent); box-shadow: none; }
+  .pick.secondary:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
   .pick:focus-visible, .retry:focus-visible, .item-retry:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
   .pick:disabled { opacity: 0.55; cursor: not-allowed; }
+  .ripple { position: absolute; border-radius: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; background: currentColor; opacity: 0.25; transform: scale(0); animation: ripple 0.65s ease-out forwards; pointer-events: none; z-index: -1; }
+  @keyframes ripple { to { transform: scale(22); opacity: 0; } }
+
   .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
-  .hint { margin: 12px 0 0; color: var(--muted); font-size: 0.85rem; text-align: center; }
+  .hint { margin: 14px 0 0; color: var(--muted); font-size: 0.82rem; text-align: center; }
+
   .notice {
-    margin: 16px 0 0; padding: 12px 14px; border-radius: 10px;
+    margin: 18px 0 0; padding: 12px 14px; border-radius: 12px;
     background: var(--warn-bg); border: 1px solid var(--warn-line);
-    font-weight: 600; text-align: center;
+    font-weight: 600; text-align: center; font-size: 0.92rem;
+    animation: rise 0.5s var(--ease) both;
   }
-  .summary { margin: 18px 0 0; font-weight: 600; text-align: center; min-height: 1.5em; }
-  .summary.ok { color: var(--ok); }
-  .summary.err { color: var(--err); }
   .banner {
-    margin: 0 0 16px; padding: 12px 14px; border-radius: 10px;
+    margin: 0 0 16px; padding: 12px 14px; border-radius: 12px;
     background: #fbeceb; color: var(--err); border: 1px solid #efc9c5;
   }
-  ul.files { list-style: none; margin: 16px 0 0; padding: 0; }
+
+  /* Resumo + barra de progresso geral */
+  .summary { margin: 20px 0 0; font-weight: 600; text-align: center; min-height: 1.5em; transition: color 0.4s ease; }
+  .summary.ok { color: var(--ok); }
+  .summary.err { color: var(--err); }
+  .overall { height: 4px; margin: 10px 0 0; border-radius: 99px; background: var(--line); overflow: hidden; opacity: 0; transition: opacity 0.4s ease; }
+  .overall.on { opacity: 1; }
+  .overall i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #9fd0a4)); transition: width 0.7s var(--ease); }
+
+  /* Lista de fotos */
+  ul.files { list-style: none; margin: 14px 0 0; padding: 0; }
   ul.files li {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+    position: relative;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
     padding: 10px 0; border-top: 1px solid var(--line);
     font-size: 0.92rem;
+    animation: slidein 0.6s var(--ease) both;
   }
-  .fname { flex: 1 1 8rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .fstatus { flex: 0 1 auto; max-width: 100%; color: var(--muted); text-align: right; }
+  @keyframes slidein { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+  .thumb {
+    flex: none; width: 48px; height: 48px; border-radius: 12px; overflow: hidden;
+    background: linear-gradient(135deg, #dfe9dc, #c6d7c3); display: grid; place-items: center; color: var(--accent);
+    box-shadow: 0 2px 8px -2px rgba(40, 70, 50, 0.3);
+    transition: transform 0.5s var(--ease), filter 0.5s ease;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.6s ease; }
+  .thumb img.loaded { opacity: 1; }
+  .thumb svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  li[data-state="uploading"] .thumb, li[data-state="waiting"] .thumb { filter: saturate(0.6) brightness(1.04); }
+  li[data-state="done"] .thumb { transform: scale(1.04); }
+  .fmeta { flex: 1 1 8rem; min-width: 0; display: grid; gap: 2px; }
+  .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .fstatus { color: var(--muted); font-size: 0.82rem; overflow-wrap: anywhere; transition: color 0.3s ease; }
   li[data-state="done"] .fstatus { color: var(--ok); }
   li[data-state="error"] .fstatus { color: var(--err); }
-  .item-retry {
-    flex: 1 0 100%;
-    min-height: 44px; padding: 8px 16px; border-radius: 999px;
+  .badge { flex: none; width: 28px; height: 28px; position: relative; }
+  .badge svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .badge .spin { stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: 42 20; opacity: 0; animation: spin 0.9s linear infinite; transform-origin: center; }
+  .badge .wait { stroke: var(--muted); stroke-width: 2; opacity: 0; }
+  .badge .ring { stroke: var(--ok); stroke-width: 2.4; stroke-dasharray: 63; stroke-dashoffset: 63; }
+  .badge .tick { stroke: var(--ok); stroke-width: 2.6; stroke-dasharray: 20; stroke-dashoffset: 20; }
+  .badge .cross { stroke: var(--err); stroke-width: 2.6; opacity: 0; }
+  li[data-state="waiting"] .badge .wait { opacity: 0.6; }
+  li[data-state="uploading"] .badge .spin { opacity: 1; }
+  li[data-state="done"] .badge .ring { stroke-dashoffset: 0; transition: stroke-dashoffset 0.7s var(--ease); }
+  li[data-state="done"] .badge .tick { stroke-dashoffset: 0; transition: stroke-dashoffset 0.5s var(--ease) 0.35s; }
+  li[data-state="error"] .badge .cross { opacity: 1; animation: shake 0.5s ease; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes shake { 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+  /* barra fina embaixo da linha enquanto envia */
+  li[data-state="uploading"]::after {
+    content: ""; position: absolute; left: 0; bottom: -1px; height: 2px; width: 35%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: sweep 1.4s ease-in-out infinite;
+  }
+  @keyframes sweep { from { left: -35%; } to { left: 100%; } }
+
+  .item-retry, .retry {
+    min-height: 44px; padding: 8px 18px; border-radius: 999px;
     border: 1px solid var(--accent); background: transparent; color: var(--accent);
     font: inherit; font-weight: 600; cursor: pointer;
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s var(--ease);
   }
-  .retry {
-    margin: 16px auto 0; display: block;
-    min-height: 44px; padding: 10px 18px; border-radius: 999px;
-    border: 1px solid var(--accent); background: transparent; color: var(--accent);
-    font: inherit; font-weight: 600; cursor: pointer;
-  }
-  .privacy { margin: 26px 4px 0; color: #5b7062; font-size: 0.8rem; line-height: 1.6; text-align: center; }
+  .item-retry { flex: 1 0 100%; }
+  .retry { margin: 16px auto 0; display: block; }
+  .item-retry:hover, .retry:hover { background: var(--accent); color: var(--accent-ink); }
+  .item-retry:active, .retry:active { transform: scale(0.97); }
+
+  .privacy { margin: 26px 4px 0; color: #51675a; font-size: 0.8rem; line-height: 1.6; text-align: center; animation: rise 0.9s var(--ease) 1.15s both; }
   .privacy svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Celebração quando todas as fotos chegam */
+  .petal { position: fixed; z-index: 50; pointer-events: none; width: 14px; height: 14px; color: var(--accent); opacity: 0; will-change: transform, opacity; animation: petal var(--d) var(--ease) forwards; }
+  .petal svg { width: 100%; height: 100%; fill: currentColor; }
+  @keyframes petal {
+    0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0); }
+    15% { opacity: 0.95; }
+    100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(1) rotate(var(--r)); }
+  }
+
+  /* Contagem regressiva */
+  .count { display: flex; justify-content: center; gap: 10px; margin: 22px 0 0; animation: rise 0.9s var(--ease) 1.05s both; }
+  .count div { min-width: 64px; padding: 10px 6px 8px; border-radius: 16px; background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 8px 20px -12px rgba(40, 70, 50, 0.35); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .count b { display: block; font: 300 1.9rem/1 "Cormorant Garamond", Georgia, serif; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .count b.tick { animation: flip 0.5s var(--ease); }
+  .count span { display: block; margin-top: 4px; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+  @keyframes flip { from { opacity: 0; transform: translateY(-8px) rotateX(70deg); } to { opacity: 1; transform: none; } }
+
+  /* Arrastar e soltar (computador) */
+  .card.drag { outline: 2px dashed var(--accent); outline-offset: 6px; }
+  .card.drag::after { content: "Solte as fotos aqui"; position: absolute; inset: 0; display: grid; place-items: center; border-radius: inherit; background: rgba(252, 253, 249, 0.92); color: var(--accent); font: 300 1.7rem "Cormorant Garamond", Georgia, serif; animation: rise 0.3s var(--ease) both; }
+
+  /* Como funciona */
+  .steps { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .steps li { text-align: center; padding: 16px 8px 14px; border-radius: 18px; background: rgba(255, 255, 255, 0.45); border: 1px solid rgba(255, 255, 255, 0.85); font-size: 0.8rem; line-height: 1.35; color: var(--muted); }
+  .steps svg { display: block; margin: 0 auto 8px; width: 26px; height: 26px; fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .steps strong { display: block; color: var(--ink); font-size: 0.86rem; margin-bottom: 2px; }
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  .steps li:nth-child(2) { transition-delay: 0.12s; }
+  .steps li:nth-child(3) { transition-delay: 0.24s; }
+
+  /* Aviso de conexão */
+  .toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 60; transform: translate(-50%, 200%); opacity: 0; visibility: hidden; padding: 10px 18px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 0.86rem; font-weight: 600; box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.4); transition: transform 0.5s var(--ease), opacity 0.4s ease, visibility 0s 0.5s; max-width: calc(100vw - 32px); text-align: center; }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition-delay: 0s; }
+
+  .signature { margin: 22px 0 0; text-align: center; font: italic 300 1.05rem "Cormorant Garamond", Georgia, serif; color: var(--accent); opacity: 0.85; }
+  .signature span { display: inline-block; color: var(--accent); animation: beat 3.4s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    .petal, .blob { display: none; }
+  }
 </style>
 </head>
 <body>
+<div class="bg" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
 <main>
   <header>
     <p class="kicker" id="kicker"></p>
     <h1 id="title">Compartilhe suas fotos</h1>
     <div class="ornament" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3 5.5 6.2 5.5c2 0 3.6 1.1 5.8 3.4 2.2-2.3 3.8-3.4 5.8-3.4 3.2 0 5 3.1 3.7 6.3C19.5 16.4 12 21 12 21z"/></svg></div>
     <p class="date" id="date" hidden></p>
+    <div class="count" id="count" role="timer" aria-label="Contagem regressiva" hidden>
+      <div><b id="c-d">0</b><span>dias</span></div><div><b id="c-h">0</b><span>horas</span></div><div><b id="c-m">0</b><span>min</span></div><div><b id="c-s">0</b><span>seg</span></div>
+    </div>
   </header>
 
   <section class="card" aria-labelledby="title">
@@ -152,12 +289,21 @@
     <p class="notice" id="notice" role="status" hidden>Não feche esta página enquanto houver fotos sendo enviadas.</p>
     <p class="hint" id="hint"></p>
     <p class="summary" id="summary" role="status" aria-live="polite"></p>
+    <div class="overall" id="overall" aria-hidden="true"><i id="overall-bar"></i></div>
     <ul class="files" id="files" aria-label="Fotos selecionadas"></ul>
     <button class="retry" id="retry" type="button" hidden>Tentar de novo todas as que falharam</button>
   </section>
 
+  <ol class="steps">
+    <li class="reveal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.6-2.4h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><strong>1. Escolha</strong>Tire uma foto ou pegue da galeria</li>
+    <li class="reveal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5m0 0-4 4m4-4 4 4"/><path d="M5 19h14"/></svg><strong>2. Envie</strong>Vai direto para o álbum, sem cadastro</li>
+    <li class="reveal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3 5.5 6.2 5.5c2 0 3.6 1.1 5.8 3.4 2.2-2.3 3.8-3.4 5.8-3.4 3.2 0 5 3.1 3.7 6.3C19.5 16.4 12 21 12 21z"/></svg><strong>3. Pronto</strong>Os noivos recebem com carinho</li>
+  </ol>
+
   <p class="privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>As fotos são guardadas em armazenamento privado: não ficam públicas na internet e só os noivos acessam a pasta. Envie apenas fotos que você tem direito de compartilhar.</p>
+  <p class="signature">Feito com <span>♥</span> para guardar cada momento</p>
 </main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"
         integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok"
@@ -186,13 +332,13 @@ const EVENT_TEXTS = {
     docTitle: "Fotos do casamento",
     kicker: "Nosso casamento",
     coupleNames: "Petria & Diego",
-    eventDate: "16 de janeiro de 2027",
-  },
+    eventDate: "16 de janeiro de 2027",  },
   "3726a2f810a1948920bf609baefd59c0": {
     docTitle: "Fotos da despedida de solteiro",
     kicker: "Despedida de solteiro · 24/10",
     coupleNames: "Pe e Di",
     eventDate: "O último brinde de solteiro, o primeiro de uma vida inteira",
+    eventAt: "2026-10-24T00:00:00",
   },
 };
 
@@ -415,6 +561,8 @@ const els = {
   hint: document.getElementById("hint"),
   summary: document.getElementById("summary"),
   files: document.getElementById("files"),
+  overall: document.getElementById("overall"),
+  overallBar: document.getElementById("overall-bar"),
   retry: document.getElementById("retry"),
 };
 
@@ -450,6 +598,10 @@ function renderSummary() {
   else if (pending > 0) { els.summary.textContent = "Enviadas " + done + " de " + total; }
   else if (failed === 0) { els.summary.textContent = done === 1 ? "1 foto enviada. Obrigado!" : done + " fotos enviadas. Obrigado!"; els.summary.className = "summary ok"; }
   else { els.summary.textContent = done + " enviada(s), " + failed + " com problema."; els.summary.className = "summary err"; }
+  els.overall.classList.toggle("on", total > 0);
+  els.overallBar.style.width = total ? Math.round(((done + failed) / total) * 100) + "%" : "0%";
+  if (total > 0 && pending === 0 && failed === 0 && !state.celebrated) { state.celebrated = true; celebrate(); }
+  if (pending > 0) state.celebrated = false;
   els.notice.hidden = pending === 0;
   const retryable = state.items.filter(function (i) { return i.state === "error" && i.retryable; }).length;
   els.retry.hidden = retryable < 2;
@@ -457,19 +609,37 @@ function renderSummary() {
 
 function addItem(file) {
   const li = document.createElement("li");
+  const thumb = document.createElement("span");
+  thumb.className = "thumb";
+  thumb.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 9"/></svg>';
+  const previewUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.alt = "";
+  img.onload = function () { thumb.textContent = ""; thumb.appendChild(img); requestAnimationFrame(function () { img.classList.add("loaded"); }); };
+  img.onerror = function () { URL.revokeObjectURL(previewUrl); }; // ex.: HEIC no Chrome: fica o ícone
+  img.src = previewUrl;
+  const meta = document.createElement("span");
+  meta.className = "fmeta";
   const nameEl = document.createElement("span");
   nameEl.className = "fname";
   nameEl.textContent = file.name || "foto";
   const statusEl = document.createElement("span");
   statusEl.className = "fstatus";
+  meta.appendChild(nameEl);
+  meta.appendChild(statusEl);
+  const badge = document.createElement("span");
+  badge.className = "badge";
+  badge.setAttribute("aria-hidden", "true");
+  badge.innerHTML = '<svg viewBox="0 0 28 28"><circle class="wait" cx="14" cy="14" r="10" stroke-dasharray="2 4"/><circle class="spin" cx="14" cy="14" r="10"/><circle class="ring" cx="14" cy="14" r="10" transform="rotate(-90 14 14)"/><path class="tick" d="m9 14.5 3.5 3.5L19 11"/><path class="cross" d="m10 10 8 8m0-8-8 8"/></svg>';
   const retryBtn = document.createElement("button");
   retryBtn.type = "button";
   retryBtn.className = "item-retry";
   retryBtn.textContent = "Tentar de novo";
   retryBtn.setAttribute("aria-label", "Tentar de novo: " + (file.name || "foto"));
   retryBtn.hidden = true;
-  li.appendChild(nameEl);
-  li.appendChild(statusEl);
+  li.appendChild(thumb);
+  li.appendChild(meta);
+  li.appendChild(badge);
   li.appendChild(retryBtn);
   els.files.appendChild(li);
   const item = { file: file, li: li, statusEl: statusEl, retryBtn: retryBtn, state: "waiting", reason: "", note: "", retryable: false, blob: null, mime: "", ext: "", path: "", tries: 0 };
@@ -480,6 +650,43 @@ function addItem(file) {
   state.items.push(item);
   return item;
 }
+
+// ===== Efeitos visuais =====
+// Pétalas/corações que sobem quando todas as fotos foram enviadas.
+function celebrate() {
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = els.summary.getBoundingClientRect();
+  const ox = r.left + r.width / 2;
+  const oy = r.top;
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement("span");
+    p.className = "petal";
+    p.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3 5.5 6.2 5.5c2 0 3.6 1.1 5.8 3.4 2.2-2.3 3.8-3.4 5.8-3.4 3.2 0 5 3.1 3.7 6.3C19.5 16.4 12 21 12 21z"/></svg>';
+    p.style.left = ox + "px";
+    p.style.top = oy + "px";
+    p.style.setProperty("--x", (Math.random() * 260 - 130).toFixed(0) + "px");
+    p.style.setProperty("--y", (-(90 + Math.random() * 190)).toFixed(0) + "px");
+    p.style.setProperty("--r", (Math.random() * 120 - 60).toFixed(0) + "deg");
+    p.style.setProperty("--d", (1.6 + Math.random() * 1.2).toFixed(2) + "s");
+    p.style.opacity = "0";
+    p.style.width = p.style.height = (9 + Math.random() * 12).toFixed(0) + "px";
+    document.body.appendChild(p);
+    p.addEventListener("animationend", function () { p.remove(); });
+  }
+}
+
+// Onda de toque nos botões.
+document.addEventListener("pointerdown", function (e) {
+  const btn = e.target.closest && e.target.closest(".pick");
+  if (!btn || btn.disabled) return;
+  const rect = btn.getBoundingClientRect();
+  const dot = document.createElement("span");
+  dot.className = "ripple";
+  dot.style.left = (e.clientX - rect.left) + "px";
+  dot.style.top = (e.clientY - rect.top) + "px";
+  btn.appendChild(dot);
+  dot.addEventListener("animationend", function () { dot.remove(); });
+});
 
 // ===== Envio =====
 function withTimeout(promise, ms) {
@@ -600,6 +807,7 @@ function pump() {
         pump();
         renderSummary();
         if (!isBusy()) {
+          syncWakeLock();
           const count = function (s) { return state.items.filter(function (i) { return i.state === s; }).length; };
           log("info", "queue.finished", { total: state.items.length, done: count("done"), failed: count("error") });
         }
@@ -617,6 +825,7 @@ function enqueue(items) {
   });
   renderSummary();
   pump();
+  syncWakeLock();
 }
 
 function handleSelection(fileList, source) {
@@ -639,6 +848,106 @@ function handleSelection(fileList, source) {
   });
   if (toSend.length) enqueue(toSend);
   else renderSummary();
+}
+
+// ===== Extras visuais =====
+function showToast(text, ms) {
+  const t = document.getElementById("toast");
+  t.textContent = text;
+  t.classList.add("show");
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(function () { t.classList.remove("show"); }, ms || 3200);
+}
+
+// Contagem regressiva até o evento (some quando a data passa).
+function startCountdown(isoDate) {
+  const box = document.getElementById("count");
+  const target = new Date(isoDate).getTime();
+  if (!Number.isFinite(target)) return;
+  const cells = { d: document.getElementById("c-d"), h: document.getElementById("c-h"), m: document.getElementById("c-m"), s: document.getElementById("c-s") };
+  function set(el, v) {
+    const txt = String(v);
+    if (el.textContent === txt) return;
+    el.textContent = txt;
+    el.classList.remove("tick");
+    void el.offsetWidth;
+    el.classList.add("tick");
+  }
+  function update() {
+    const diff = target - Date.now();
+    if (diff <= 0) { box.hidden = true; return false; }
+    const s = Math.floor(diff / 1000);
+    set(cells.d, Math.floor(s / 86400));
+    set(cells.h, pad(Math.floor(s % 86400 / 3600)));
+    set(cells.m, pad(Math.floor(s % 3600 / 60)));
+    set(cells.s, pad(s % 60));
+    box.hidden = false;
+    return true;
+  }
+  if (!update()) return;
+  const timer = setInterval(function () { if (!update()) clearInterval(timer); }, 1000);
+}
+
+// Mantém a tela acesa enquanto há fotos subindo (o celular não bloqueia e não pausa o envio).
+let wakeLock = null;
+async function syncWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  try {
+    if (isBusy() && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", function () { wakeLock = null; });
+    } else if (!isBusy() && wakeLock) {
+      await wakeLock.release();
+    }
+  } catch (err) {
+    log("warn", "wakelock.failed", { error: serializeError(err) });
+  }
+}
+document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") syncWakeLock(); });
+
+// Os cartões "Como funciona" aparecem ao rolar a página.
+function setupReveal() {
+  const nodes = document.querySelectorAll(".reveal");
+  if (!("IntersectionObserver" in window)) { nodes.forEach(function (n) { n.classList.add("in"); }); return; }
+  const io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { threshold: 0.25 });
+  nodes.forEach(function (n) { io.observe(n); });
+}
+
+// As manchas do fundo acompanham levemente o dedo/mouse.
+function setupParallax() {
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const blobs = document.querySelectorAll(".blob");
+  let raf = 0;
+  window.addEventListener("pointermove", function (e) {
+    if (raf) return;
+    raf = requestAnimationFrame(function () {
+      raf = 0;
+      const x = e.clientX / window.innerWidth - 0.5;
+      const y = e.clientY / window.innerHeight - 0.5;
+      blobs.forEach(function (b, i) { b.style.translate = (-x * (24 + i * 14)) + "px " + (-y * (24 + i * 14)) + "px"; });
+    });
+  }, { passive: true });
+}
+
+// Arrastar fotos para a página (computador).
+function setupDrop() {
+  const card = document.querySelector(".card");
+  let depth = 0;
+  window.addEventListener("dragenter", function (e) {
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes("Files")) return;
+    depth++;
+    card.classList.add("drag");
+  });
+  window.addEventListener("dragleave", function () { depth = Math.max(0, depth - 1); if (!depth) card.classList.remove("drag"); });
+  window.addEventListener("dragover", function (e) { e.preventDefault(); });
+  window.addEventListener("drop", function (e) {
+    e.preventDefault();
+    depth = 0;
+    card.classList.remove("drag");
+    if (state.client && e.dataTransfer && e.dataTransfer.files.length) handleSelection(e.dataTransfer.files, "drop");
+  });
 }
 
 // ===== Inicialização =====
@@ -667,6 +976,9 @@ function init() {
     els.date.textContent = texts.eventDate;
     els.date.hidden = false;
   }
+  if (texts.eventAt) startCountdown(texts.eventAt);
+  setupReveal();
+  setupParallax();
   els.hint.textContent = "Várias fotos de uma vez · as fotos são reduzidas automaticamente antes do envio";
 
   const missing = [];
@@ -721,8 +1033,9 @@ function init() {
   window.addEventListener("beforeunload", function (e) {
     if (isBusy()) { e.preventDefault(); e.returnValue = ""; }
   });
-  window.addEventListener("offline", function () { log("warn", "network.offline"); });
-  window.addEventListener("online", function () { log("info", "network.online"); });
+  window.addEventListener("offline", function () { log("warn", "network.offline"); showToast("Sem conexão. Os envios continuam quando o sinal voltar.", 5000); });
+  window.addEventListener("online", function () { log("info", "network.online"); showToast("Conexão de volta ✓"); });
+  setupDrop();
 
   log("info", "app.ready", { bucket: CONFIG.bucket, folderSource: folder.source, sdk: "supabase-js@2.117.2" });
 }

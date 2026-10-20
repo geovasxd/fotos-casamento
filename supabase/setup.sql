@@ -31,7 +31,8 @@ with check (
   and array_length(storage.foldername(name), 1) = 1
   and (storage.foldername(name))[1] in (
     '7646c3cabd95e59fab53bbae5a6c0fdc', -- casamento
-    '3726a2f810a1948920bf609baefd59c0'  -- despedida de solteiro
+    '3726a2f810a1948920bf609baefd59c0', -- despedida de solteiro
+    'keepalive'                         -- pings do workflow keepalive-supabase.yml (não vai ao Drive)
   )
 );
 

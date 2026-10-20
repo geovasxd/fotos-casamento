@@ -1,0 +1,41 @@
+name: Keepalive Supabase
+
+# O plano gratuito do Supabase pausa o projeto após ~7 dias sem atividade.
+# A cada 2 dias este job envia uma imagem PNG de 1x1 pixel (~70 bytes) para a pasta
+# "keepalive" do bucket, usando a mesma chave publishable dos convidados (pública por design).
+# A pasta "keepalive" não está em sync-drive.yml, então nada disso chega ao Drive dos noivos.
+
+on:
+  schedule:
+    - cron: "17 9 */2 * *"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: https://hwepfyjipnwusjbtelcr.supabase.co
+      SUPABASE_KEY: sb_publishable_xHfR1QJ4jYbUjQFizxcv_g_OTsCnsQb
+      BUCKET: fotos-casamento
+      FOLDER: keepalive
+    steps:
+      - name: Enviar imagem mínima
+        run: |
+          set -euo pipefail
+          printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' | base64 -d > ping.png
+          BYTES=$(wc -c < ping.png)
+          OBJ="${FOLDER}/$(date -u +%Y%m%dT%H%M%SZ)-${RANDOM}${RANDOM}.png"
+          STATUS=$(curl -sS -o resp.json -w '%{http_code}' -X POST \
+            "${SUPABASE_URL}/storage/v1/object/${BUCKET}/${OBJ}" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}" \
+            -H "Content-Type: image/png" \
+            -H "x-upsert: false" \
+            --data-binary @ping.png)
+          echo "{\"level\":\"info\",\"event\":\"keepalive.upload\",\"status\":${STATUS},\"object\":\"${OBJ}\",\"bytes\":${BYTES}}"
+          if [ "${STATUS}" -lt 200 ] || [ "${STATUS}" -ge 300 ]; then
+            echo "{\"level\":\"error\",\"event\":\"keepalive.failed\",\"status\":${STATUS}}"
+            cat resp.json
+            exit 1
+          fi
